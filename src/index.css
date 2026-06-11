@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/*
+ * Connection handles: subtle until you need them. Barely visible at rest,
+ * fully shown while hovering or connecting; they scale up under the cursor.
+ */
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #0f172a;
+  border-radius: 9999px;
+  opacity: 0.35;
+  transition:
+    opacity 0.15s ease,
+    scale 0.15s ease;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__node.selected .react-flow__handle,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto {
+  opacity: 1;
+}
+
+.react-flow__handle:hover {
+  scale: 1.45;
+}
+
+.react-flow__edge .react-flow__edge-path {
+  stroke-width: 1.75;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 2.5;
+  cursor: pointer;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #f8fafc !important;
+  stroke-width: 2.5;
+}
+
+.react-flow__connectionline path {
+  stroke: #94a3b8;
+  stroke-width: 1.75;
+  stroke-dasharray: 6 4;
+}
+
+/* Dialog enter animations */
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dialog-backdrop {
+  animation: dialog-fade-in 0.12s ease-out;
+}
+
+.dialog-panel {
+  animation: dialog-pop 0.12s ease-out;
+}
