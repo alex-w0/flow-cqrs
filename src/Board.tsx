@@ -157,7 +157,6 @@ export default function Board() {
           return;
         }
         node.parentId = slice.id;
-        node.extent = 'parent';
         node.position = cellSlotPosition(cell);
       }
       setNodes((nds) => [...nds, node]);
@@ -250,8 +249,10 @@ export default function Board() {
 
         const slice = findSliceAt(all, centerX, centerY);
         if (!slice) {
-          // extent: 'parent' keeps children inside their slice, so a node without
-          // a slice under it is a free node — nothing to update.
+          // Dropped on open canvas: detach from any slice and keep the spot.
+          if (dragged.parentId) {
+            updates.set(dragged.id, { parentId: undefined, position: absolute });
+          }
           continue;
         }
 
@@ -284,9 +285,7 @@ export default function Board() {
           nds.map((node) => {
             const update = updates.get(node.id);
             if (!update) return node;
-            return update.parentId
-              ? { ...node, parentId: update.parentId, extent: 'parent' as const, position: update.position }
-              : { ...node, parentId: undefined, extent: undefined, position: update.position };
+            return { ...node, parentId: update.parentId, extent: undefined, position: update.position };
           }),
         ),
       );

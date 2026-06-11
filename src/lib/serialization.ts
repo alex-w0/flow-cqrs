@@ -141,7 +141,8 @@ export function parseBoardFile(raw: string): ParsedBoard {
     } else if (isCqrsKind(node.type)) {
       const content = typeof node.data?.content === 'string' && node.data.content.trim() ? node.data.content : undefined;
       const wireframe = node.type === 'screen' ? sanitizeWireframe(node.data?.wireframe) : undefined;
-      nodes.push({ ...node, data: { label, content, wireframe } });
+      // Strip extent from older exports — elements move freely in and out of slices.
+      nodes.push({ ...node, extent: undefined, data: { label, content, wireframe } });
     } else {
       throw new Error(`Node "${node.id}" has unknown type "${node.type}".`);
     }

@@ -24,7 +24,6 @@ export const initialNodes: BoardNode[] = [
     type: 'screen',
     position: cellSlotPosition({ col: 0, row: 1 }),
     parentId: 'slice_demo',
-    extent: 'parent',
     data: {
       label: 'Cart Page',
       wireframe: {
@@ -47,7 +46,6 @@ export const initialNodes: BoardNode[] = [
     type: 'command',
     position: cellSlotPosition({ col: 1, row: 1 }),
     parentId: 'slice_demo',
-    extent: 'parent',
     data: { label: 'Add Item', content: 'productId: Uuid\nquantity: Int' },
   },
   {
@@ -55,7 +53,6 @@ export const initialNodes: BoardNode[] = [
     type: 'event',
     position: cellSlotPosition({ col: 1, row: 2 }),
     parentId: 'slice_demo',
-    extent: 'parent',
     data: { label: 'Item Added', content: 'productId: Uuid\nquantity: Int\naddedAt: Instant' },
   },
   {
@@ -63,7 +60,6 @@ export const initialNodes: BoardNode[] = [
     type: 'readmodel',
     position: cellSlotPosition({ col: 2, row: 1 }),
     parentId: 'slice_demo',
-    extent: 'parent',
     data: { label: 'Cart Items', content: 'items: CartItem[]\ntotal: Money' },
   },
   {

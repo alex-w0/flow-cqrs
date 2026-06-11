@@ -20,8 +20,10 @@ npm run build    # type-check + production build
   (Actor, Interaction, Events, Spec Lane) crossed with columns. Use the "+" buttons
   on the right/bottom edges to append columns or swimlanes; double-click a lane
   label to rename it. Elements dragged onto a slice snap into the cell under the
-  cursor and become children (moving the slice moves its contents). Each cell holds
-  at most one element — dropping on an occupied cell snaps the drag back.
+  cursor and become children (moving the slice moves its contents); dragging an
+  element off the slice detaches it again, so elements move freely between the
+  open board and any slice. Each cell holds at most one element — dropping on an
+  occupied cell snaps the drag back.
 - **Connect** — every element has four handles (top/right/bottom/left); drag from
   any handle to any other node's handle. Edges take the color of their source
   element and end in a matching arrowhead.
