@@ -1,7 +1,68 @@
 import type { ReactFlowJsonObject, Viewport } from '@xyflow/react';
-import type { BoardNode, BoardEdge } from '../types';
-import { DEFAULT_COLUMNS, DEFAULT_LANES, isCqrsKind } from '../types';
+import type { BoardNode, BoardEdge, Wireframe, WireframeElement, WireframeStroke } from '../types';
+import {
+  DEFAULT_COLUMNS,
+  DEFAULT_LANES,
+  WIREFRAME_HEIGHT,
+  WIREFRAME_WIDTH,
+  isCqrsKind,
+} from '../types';
 import { sliceHeight, sliceWidth } from './grid';
+
+const WIREFRAME_KINDS = new Set(['button', 'input', 'image', 'checkbox', 'heading', 'text', 'rect']);
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** Validates an imported wireframe, dropping malformed entries; undefined if nothing valid remains. */
+function sanitizeWireframe(value: unknown): Wireframe | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const raw = value as Partial<Wireframe>;
+
+  const elements: WireframeElement[] = [];
+  if (Array.isArray(raw.elements)) {
+    for (const el of raw.elements as Partial<WireframeElement>[]) {
+      if (
+        el &&
+        typeof el.id === 'string' &&
+        typeof el.kind === 'string' &&
+        WIREFRAME_KINDS.has(el.kind) &&
+        isFiniteNumber(el.x) &&
+        isFiniteNumber(el.y) &&
+        isFiniteNumber(el.w) &&
+        isFiniteNumber(el.h) &&
+        (el.text === undefined || typeof el.text === 'string')
+      ) {
+        elements.push({ id: el.id, kind: el.kind, x: el.x, y: el.y, w: el.w, h: el.h, text: el.text });
+      }
+    }
+  }
+
+  const strokes: WireframeStroke[] = [];
+  if (Array.isArray(raw.strokes)) {
+    for (const stroke of raw.strokes as Partial<WireframeStroke>[]) {
+      if (
+        stroke &&
+        typeof stroke.id === 'string' &&
+        Array.isArray(stroke.points) &&
+        stroke.points.length >= 4 &&
+        stroke.points.length % 2 === 0 &&
+        stroke.points.every(isFiniteNumber)
+      ) {
+        strokes.push({ id: stroke.id, points: [...stroke.points] });
+      }
+    }
+  }
+
+  if (elements.length === 0 && strokes.length === 0) return undefined;
+  return {
+    width: isFiniteNumber(raw.width) && raw.width > 0 ? raw.width : WIREFRAME_WIDTH,
+    height: isFiniteNumber(raw.height) && raw.height > 0 ? raw.height : WIREFRAME_HEIGHT,
+    elements,
+    strokes,
+  };
+}
 
 export interface ParsedBoard {
   nodes: BoardNode[];
@@ -79,7 +140,8 @@ export function parseBoardFile(raw: string): ParsedBoard {
       });
     } else if (isCqrsKind(node.type)) {
       const content = typeof node.data?.content === 'string' && node.data.content.trim() ? node.data.content : undefined;
-      nodes.push({ ...node, data: { label, content } });
+      const wireframe = node.type === 'screen' ? sanitizeWireframe(node.data?.wireframe) : undefined;
+      nodes.push({ ...node, data: { label, content, wireframe } });
     } else {
       throw new Error(`Node "${node.id}" has unknown type "${node.type}".`);
     }

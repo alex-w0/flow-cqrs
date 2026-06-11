@@ -28,6 +28,13 @@ npm run build    # type-check + production build
 - **Edit** — double-click an element to edit its label and its content block
   (attributes, one per line — e.g. `productId: Uuid`). Double-click a slice title
   to rename it (Enter commits, Escape cancels).
+- **Screen wireframes** — hover a Screen/UI element and click the layout button to
+  open the wireframe editor: place mockup primitives (button, input, image,
+  checkbox, heading, text, card) from the left palette, or draw freehand with the
+  pencil tool. Select/move/resize elements; double-click one to edit its text
+  inline (text mockups start editing immediately); Backspace deletes. Saving
+  renders the wireframe inside the element below its title, and it round-trips
+  through JSON export/import.
 - **Delete** — hover/select an element and click the ×, or select nodes/edges and
   press Backspace/Delete. Deleting a slice deletes its contents.
 - **Save / load** — Export downloads the full board (nodes, edges, parent-child
@@ -46,6 +53,7 @@ src/
     CqrsNode.tsx             shared sticky-note card with 4-way handles + attributes block
     SliceNode.tsx            swimlane grid table with add-column/add-lane controls
   components/
+    wireframe/               screen wireframe editor, node preview, shared SVG shapes
     Palette.tsx              floating drag-and-drop / click-to-add panel
     Toolbar.tsx              zoom, fit view, export/import, clear board
     DnDContext.tsx           shares the dragged palette kind during HTML5 DnD

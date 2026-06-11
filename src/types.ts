@@ -8,10 +8,42 @@ export type CqrsKind = 'command' | 'event' | 'readmodel' | 'screen' | 'automatio
 /** Everything that can be added from the palette (elements + slices). */
 export type PaletteKind = CqrsKind | 'slice';
 
+/** Mockup primitives available in the screen wireframe editor. */
+export type WireframeElementKind = 'button' | 'input' | 'image' | 'checkbox' | 'heading' | 'text' | 'rect';
+
+export interface WireframeElement {
+  id: string;
+  kind: WireframeElementKind;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text?: string;
+}
+
+/** A freehand pen stroke as a flat list of x,y pairs in wireframe coordinates. */
+export interface WireframeStroke {
+  id: string;
+  points: number[];
+}
+
+export interface Wireframe {
+  width: number;
+  height: number;
+  elements: WireframeElement[];
+  strokes: WireframeStroke[];
+}
+
+/** Logical canvas size of a screen wireframe (rendered scaled). */
+export const WIREFRAME_WIDTH = 320;
+export const WIREFRAME_HEIGHT = 220;
+
 export interface BoardNodeData {
   label: string;
   /** Optional body text for CQRS elements — e.g. command/event attributes, one per line. */
   content?: string;
+  /** Screen only: the wireframe mockup shown below the title. */
+  wireframe?: Wireframe;
   /** Slice only: number of grid columns. */
   columns?: number;
   /** Slice only: swimlane names, top to bottom. */

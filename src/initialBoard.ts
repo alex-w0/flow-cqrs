@@ -25,7 +25,22 @@ export const initialNodes: BoardNode[] = [
     position: cellSlotPosition({ col: 0, row: 1 }),
     parentId: 'slice_demo',
     extent: 'parent',
-    data: { label: 'Cart Page' },
+    data: {
+      label: 'Cart Page',
+      wireframe: {
+        width: 320,
+        height: 220,
+        elements: [
+          { id: 'wf_demo_1', kind: 'heading', x: 16, y: 12, w: 140, h: 20, text: 'Shopping Cart' },
+          { id: 'wf_demo_2', kind: 'image', x: 16, y: 44, w: 64, h: 50 },
+          { id: 'wf_demo_3', kind: 'text', x: 92, y: 48, w: 100, h: 14, text: 'Wireless Mouse' },
+          { id: 'wf_demo_4', kind: 'text', x: 92, y: 66, w: 100, h: 14, text: '1 × €29.90' },
+          { id: 'wf_demo_5', kind: 'input', x: 16, y: 130, w: 130, h: 26, text: 'Promo code' },
+          { id: 'wf_demo_6', kind: 'button', x: 210, y: 176, w: 94, h: 28, text: 'Checkout' },
+        ],
+        strokes: [],
+      },
+    },
   },
   {
     id: 'command_demo',
