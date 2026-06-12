@@ -1,6 +1,6 @@
 import { useReactFlow } from '@xyflow/react';
-import { Download, Maximize, Tags, Trash2, Upload, ZoomIn, ZoomOut } from 'lucide-react';
-import { useBoardContexts } from './ContextsContext';
+import { Download, Maximize, Trash2, Upload, ZoomIn, ZoomOut } from 'lucide-react';
+import ContextsMenu from './ContextsMenu';
 
 interface ToolbarProps {
   onExport: () => void;
@@ -13,7 +13,6 @@ const BUTTON =
 
 export default function Toolbar({ onExport, onImport, onClear }: ToolbarProps) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
-  const { activeContexts, openManager } = useBoardContexts();
 
   return (
     <div className="flex items-center gap-0.5 rounded-xl border border-slate-700 bg-slate-900/90 p-1.5 shadow-xl shadow-black/40 backdrop-blur">
@@ -32,15 +31,7 @@ export default function Toolbar({ onExport, onImport, onClear }: ToolbarProps) {
         <Maximize size={15} />
         Fit View
       </button>
-      <button type="button" className={BUTTON} title="Manage contexts" onClick={openManager}>
-        <Tags size={15} />
-        Contexts
-        {activeContexts.map((name) => (
-          <span key={name} className="rounded-full bg-indigo-500/20 px-1.5 py-px text-[10px] font-semibold text-indigo-300">
-            {name}
-          </span>
-        ))}
-      </button>
+      <ContextsMenu />
 
       <div className="mx-1 h-5 w-px bg-slate-700" />
 

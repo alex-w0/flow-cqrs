@@ -15,15 +15,7 @@ const ICON_BUTTON = 'rounded p-1 text-slate-400 transition-colors hover:bg-slate
  * add new ones.
  */
 export default function ContextsManager({ onClose }: ContextsManagerProps) {
-  const {
-    contexts,
-    activeContexts,
-    toggleActiveContext,
-    clearActiveContexts,
-    addContext,
-    renameContext,
-    removeContext,
-  } = useBoardContexts();
+  const { contexts, addContext, renameContext, removeContext } = useBoardContexts();
   const [newName, setNewName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -88,44 +80,6 @@ export default function ContextsManager({ onClose }: ContextsManagerProps) {
             <p className="text-xs text-slate-400">DCB bounded contexts events can be assigned to.</p>
           </div>
         </div>
-
-        {contexts.length > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Highlight contexts</span>
-              {activeContexts.length > 0 && (
-                <button
-                  type="button"
-                  className="text-[11px] font-medium text-indigo-400 hover:text-indigo-300"
-                  onClick={clearActiveContexts}
-                >
-                  Clear highlighting
-                </button>
-              )}
-            </div>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {contexts.map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  title={`Toggle highlight for ${name}`}
-                  aria-pressed={activeContexts.includes(name)}
-                  className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
-                    activeContexts.includes(name)
-                      ? contextTagClass(name)
-                      : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
-                  }`}
-                  onClick={() => toggleActiveContext(name)}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500">
-              Events outside every highlighted context are dimmed on the board.
-            </p>
-          </div>
-        )}
 
         {contexts.length > 0 ? (
           <ul className="mt-4 space-y-1">
