@@ -100,21 +100,6 @@ export default function ElementEditor({ nodeId, onClose }: ElementEditorProps) {
           />
         </label>
 
-        <label className="mt-3 block text-xs font-medium text-slate-400">
-          Attributes — one per line
-          <textarea
-            value={content}
-            rows={8}
-            placeholder={'e.g.\nproductId: Uuid\nquantity: Int'}
-            className="mt-1 w-full resize-y rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 font-mono text-xs leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400"
-            onChange={(event) => setContent(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
-              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) save();
-            }}
-          />
-        </label>
-
         {node.type === 'event' && contexts.length >= 2 && (
           <div className="mt-3">
             <span className="block text-xs font-medium text-slate-400">Contexts</span>
@@ -140,6 +125,21 @@ export default function ElementEditor({ nodeId, onClose }: ElementEditorProps) {
             </p>
           </div>
         )}
+
+        <label className="mt-3 block text-xs font-medium text-slate-400">
+          Attributes — one per line
+          <textarea
+            value={content}
+            rows={8}
+            placeholder={'e.g.\nproductId: Uuid\nquantity: Int'}
+            className="mt-1 w-full resize-y rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 font-mono text-xs leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400"
+            onChange={(event) => setContent(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) save();
+            }}
+          />
+        </label>
 
         <div className="mt-4 flex justify-end gap-2">
           <button
