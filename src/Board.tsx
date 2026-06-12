@@ -28,8 +28,8 @@ import { useSetDropHighlight, type CellHighlight } from './components/DropHighli
 import { TracedNodesProvider, useFlowTrace } from './components/FlowTraceContext';
 import { HighlightDimProvider } from './components/HighlightDimContext';
 import { nodeTypes } from './nodes';
-import { downloadBoard, parseBoardFile } from './lib/serialization';
 import { DEFAULT_CONTEXT } from './lib/contexts';
+import { downloadBoard, parseBoardFile } from './lib/serialization';
 import { computeDimmedIds, computeDownstream } from './lib/highlight';
 import { nextId } from './lib/id';
 import {
