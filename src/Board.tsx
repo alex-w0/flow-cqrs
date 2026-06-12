@@ -95,14 +95,20 @@ export default function Board() {
 
   // Context highlighting: dim inactive events plus every element whose flow
   // is only reachable through them; arrows fade with their dimmed endpoints.
+  // Selected edges swap to a white arrowhead to match their white stroke
+  // (set in index.css) — CSS can't recolor SVG marker definitions.
   const dimmedIds = useMemo(() => computeDimmedIds(nodes, edges, activeContexts), [nodes, edges, activeContexts]);
   const displayEdges = useMemo(
     () =>
-      dimmedIds.size === 0
-        ? edges
-        : edges.map((edge) =>
-            dimmedIds.has(edge.source) || dimmedIds.has(edge.target) ? { ...edge, className: 'dimmed-edge' } : edge,
-          ),
+      edges.map((edge) => {
+        const dim = dimmedIds.has(edge.source) || dimmedIds.has(edge.target);
+        if (!dim && !edge.selected) return edge;
+        return {
+          ...edge,
+          ...(dim ? { className: 'dimmed-edge' } : {}),
+          ...(edge.selected ? { markerEnd: edgeMarker('#f8fafc') } : {}),
+        };
+      }),
     [edges, dimmedIds],
   );
 
@@ -168,6 +174,7 @@ export default function Board() {
           height: sliceHeight(DEFAULT_LANES.length),
           data: { label: 'New Slice', columns: DEFAULT_COLUMNS, lanes: [...DEFAULT_LANES] },
           dragHandle: '.slice-drag-handle',
+          zIndex: -1,
         };
         // Prepend: a new slice has no children yet, and slices must stay before elements.
         setNodes((nds) => [slice, ...nds]);
@@ -413,6 +420,11 @@ export default function Board() {
         connectionRadius={28}
         isValidConnection={(connection) => connection.source !== connection.target}
         deleteKeyCode={['Backspace', 'Delete']}
+        // Fixed layering: slices (-1) < edges (0) < element cards (0, painted
+        // after edges). React Flow's automatic elevation would lift edges
+        // touching selected or slice-contained nodes above other cards;
+        // selection/hover elevation for cards is done in CSS instead.
+        zIndexMode="manual"
         colorMode="dark"
         fitView
         fitViewOptions={{ padding: 0.25 }}

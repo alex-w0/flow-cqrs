@@ -144,6 +144,7 @@ export function parseBoardFile(raw: string): ParsedBoard {
         height: sliceHeight(lanes.length),
         data: { label, columns, lanes },
         dragHandle: '.slice-drag-handle',
+        zIndex: -1,
       });
     } else if (isCqrsKind(node.type)) {
       const content = typeof node.data?.content === 'string' && node.data.content.trim() ? node.data.content : undefined;
@@ -160,8 +161,14 @@ export function parseBoardFile(raw: string): ParsedBoard {
             ? [DEFAULT_CONTEXT]
             : [];
       }
-      // Strip extent from older exports — elements move freely in and out of slices.
-      nodes.push({ ...node, extent: undefined, data: { label, content, wireframe, contexts: nodeContexts } });
+      // Strip extent (elements move freely in and out of slices) and any stale
+      // zIndex — layering is fixed board-wide (slices < edges < elements).
+      nodes.push({
+        ...node,
+        extent: undefined,
+        zIndex: undefined,
+        data: { label, content, wireframe, contexts: nodeContexts },
+      });
     } else {
       throw new Error(`Node "${node.id}" has unknown type "${node.type}".`);
     }

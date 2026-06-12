@@ -19,6 +19,7 @@ export const initialNodes: BoardNode[] = [
     height: sliceHeight(DEFAULT_LANES.length),
     data: { label: 'Add Item to Cart', columns: DEFAULT_COLUMNS, lanes: [...DEFAULT_LANES] },
     dragHandle: '.slice-drag-handle',
+    zIndex: -1,
   },
   {
     id: 'screen_demo',

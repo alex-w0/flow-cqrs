@@ -35,16 +35,23 @@ body,
 }
 
 /*
- * A hovered element card pops above its neighbors so its expanded overlay
- * (full content of a cell-clipped card) is never covered. Matches the
- * z-index React Flow gives selected nodes; !important is needed to beat
- * the inline z-index React Flow sets on the node wrapper.
+ * A hovered, selected, or dragged element card pops above its neighbors so
+ * its expanded overlay (full content of a cell-clipped card) is never
+ * covered. The board runs zIndexMode="manual" (so edges always stay behind
+ * cards); this rule restores elevation for cards only — never for slices,
+ * which would cover their children. !important is needed to beat the inline
+ * z-index React Flow sets on the node wrapper.
  */
 .react-flow__node-command:hover,
 .react-flow__node-event:hover,
 .react-flow__node-readmodel:hover,
 .react-flow__node-screen:hover,
-.react-flow__node-processor:hover {
+.react-flow__node-processor:hover,
+.react-flow__node-command.selected,
+.react-flow__node-event.selected,
+.react-flow__node-readmodel.selected,
+.react-flow__node-screen.selected,
+.react-flow__node-processor.selected {
   z-index: 1000 !important;
 }
 
@@ -66,6 +73,16 @@ body,
 .react-flow__edge.selected .react-flow__edge-path {
   stroke: #f8fafc !important;
   stroke-width: 2.5;
+}
+
+/*
+ * A selected edge rises above all cards (even hovered ones at 1000) so its
+ * endpoint anchors — which sit on top of node handles — can be grabbed and
+ * dragged to reconnect the arrow. zIndexMode="manual" keeps every other edge
+ * behind the cards; the z-index lives on the edge's wrapper <svg>.
+ */
+.react-flow__edges svg:has(> .react-flow__edge.selected) {
+  z-index: 1001 !important;
 }
 
 .react-flow__connectionline path {
