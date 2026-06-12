@@ -21,11 +21,13 @@ import {
 } from '@xyflow/react';
 import Palette from './components/Palette';
 import Toolbar from './components/Toolbar';
+import { useBoardContexts } from './components/ContextsContext';
 import { useDnD } from './components/DnDContext';
 import { useDialog } from './components/Dialog';
 import { useSetDropHighlight, type CellHighlight } from './components/DropHighlightContext';
 import { nodeTypes } from './nodes';
 import { downloadBoard, parseBoardFile } from './lib/serialization';
+import { DEFAULT_CONTEXT } from './lib/contexts';
 import { nextId } from './lib/id';
 import {
   cellAt,
@@ -81,6 +83,7 @@ export default function Board() {
     BoardEdge
   >();
   const [dragKind, setDragKind] = useDnD();
+  const { contexts, replaceContexts } = useBoardContexts();
   const setDropHighlight = useSetDropHighlight();
   const dialog = useDialog();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,7 +165,11 @@ export default function Board() {
         id: nextId(kind),
         type: kind,
         position: { x: center.x - NODE_WIDTH / 2, y: center.y - NODE_HEIGHT / 2 },
-        data: { label: style.defaultLabel },
+        data: {
+          label: style.defaultLabel,
+          // New events start in the default context — if it still exists on this board.
+          ...(kind === 'event' && contexts.includes(DEFAULT_CONTEXT) ? { contexts: [DEFAULT_CONTEXT] } : {}),
+        },
       };
 
       const slice = findSliceAt(all, center.x, center.y);
@@ -180,7 +187,7 @@ export default function Board() {
       }
       setNodes((nds) => [...nds, node]);
     },
-    [getNodes, setNodes, dialog],
+    [getNodes, setNodes, dialog, contexts],
   );
 
   // --- Palette interactions ---------------------------------------------------
@@ -315,8 +322,8 @@ export default function Board() {
   // --- JSON import / export -----------------------------------------------------
 
   const onExport = useCallback(() => {
-    downloadBoard(toObject());
-  }, [toObject]);
+    downloadBoard(toObject(), contexts);
+  }, [toObject, contexts]);
 
   const onImportClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -331,9 +338,15 @@ export default function Board() {
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const { nodes: importedNodes, edges: importedEdges, viewport } = parseBoardFile(String(reader.result));
+          const {
+            nodes: importedNodes,
+            edges: importedEdges,
+            viewport,
+            contexts: importedContexts,
+          } = parseBoardFile(String(reader.result));
           setNodes(importedNodes);
           setEdges(importedEdges);
+          replaceContexts(importedContexts);
           if (viewport) void setViewport(viewport);
         } catch (error) {
           void dialog.alert({
@@ -346,7 +359,7 @@ export default function Board() {
         void dialog.alert({ title: 'Import failed', message: 'The file could not be read.' });
       reader.readAsText(file);
     },
-    [setNodes, setEdges, setViewport, dialog],
+    [setNodes, setEdges, replaceContexts, setViewport, dialog],
   );
 
   const onClear = useCallback(async () => {
@@ -359,8 +372,9 @@ export default function Board() {
     if (confirmed) {
       setNodes([]);
       setEdges([]);
+      replaceContexts([DEFAULT_CONTEXT]);
     }
-  }, [dialog, setNodes, setEdges]);
+  }, [dialog, setNodes, setEdges, replaceContexts]);
 
   return (
     <ReactFlow<BoardNode, BoardEdge>

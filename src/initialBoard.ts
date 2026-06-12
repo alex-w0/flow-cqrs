@@ -1,6 +1,7 @@
 import { MarkerType } from '@xyflow/react';
 import type { BoardEdge, BoardNode } from './types';
 import { DEFAULT_COLUMNS, DEFAULT_LANES, ELEMENT_STYLES } from './types';
+import { DEFAULT_CONTEXT } from './lib/contexts';
 import { cellSlotPosition, sliceHeight, sliceWidth } from './lib/grid';
 
 /**
@@ -53,7 +54,11 @@ export const initialNodes: BoardNode[] = [
     type: 'event',
     position: cellSlotPosition({ col: 1, row: 2 }),
     parentId: 'slice_demo',
-    data: { label: 'Item Added', content: 'productId: Uuid\nquantity: Int\naddedAt: Instant' },
+    data: {
+      label: 'Item Added',
+      content: 'productId: Uuid\nquantity: Int\naddedAt: Instant',
+      contexts: [DEFAULT_CONTEXT],
+    },
   },
   {
     id: 'readmodel_demo',

@@ -44,6 +44,8 @@ export interface BoardNodeData {
   content?: string;
   /** Screen only: the wireframe mockup shown below the title. */
   wireframe?: Wireframe;
+  /** Event only: DCB bounded contexts this event belongs to; undefined means ['default']. */
+  contexts?: string[];
   /** Slice only: number of grid columns. */
   columns?: number;
   /** Slice only: swimlane names, top to bottom. */

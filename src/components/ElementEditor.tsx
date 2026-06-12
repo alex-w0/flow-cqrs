@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import type { BoardEdge, BoardNode } from '../types';
 import { ELEMENT_STYLES, isCqrsKind } from '../types';
+import { contextTagClass, contextsOf } from '../lib/contexts';
+import { useBoardContexts } from './ContextsContext';
 
 interface ElementEditorProps {
   nodeId: string;
@@ -16,9 +18,13 @@ interface ElementEditorProps {
  */
 export default function ElementEditor({ nodeId, onClose }: ElementEditorProps) {
   const { getNode, updateNodeData } = useReactFlow<BoardNode, BoardEdge>();
+  const { contexts } = useBoardContexts();
   const node = getNode(nodeId);
   const [label, setLabel] = useState(node?.data.label ?? '');
   const [content, setContent] = useState(node?.data.content ?? '');
+  const [assigned, setAssigned] = useState<Set<string>>(
+    () => new Set(node ? contextsOf(node.data).filter((c) => contexts.includes(c)) : []),
+  );
   const labelRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,8 +53,18 @@ export default function ElementEditor({ nodeId, onClose }: ElementEditorProps) {
     updateNodeData(nodeId, {
       label: trimmedLabel.length > 0 ? trimmedLabel : style.defaultLabel,
       content: trimmedContent.length > 0 ? trimmedContent : undefined,
+      ...(node.type === 'event' ? { contexts: contexts.filter((c) => assigned.has(c)) } : {}),
     });
     onClose();
+  };
+
+  const toggleContext = (name: string) => {
+    setAssigned((current) => {
+      const next = new Set(current);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
   };
 
   return (
@@ -98,6 +114,32 @@ export default function ElementEditor({ nodeId, onClose }: ElementEditorProps) {
             }}
           />
         </label>
+
+        {node.type === 'event' && contexts.length >= 2 && (
+          <div className="mt-3">
+            <span className="block text-xs font-medium text-slate-400">Contexts</span>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {contexts.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  aria-pressed={assigned.has(name)}
+                  className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
+                    assigned.has(name)
+                      ? contextTagClass(name)
+                      : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                  }`}
+                  onClick={() => toggleContext(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Events outside every highlighted context are dimmed on the board.
+            </p>
+          </div>
+        )}
 
         <div className="mt-4 flex justify-end gap-2">
           <button

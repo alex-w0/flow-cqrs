@@ -4,6 +4,8 @@ import { LayoutTemplate, Pencil, X } from 'lucide-react';
 import type { BoardNode } from '../types';
 import { ELEMENT_STYLES, SLOTTED_NODE_HEIGHT, isCqrsKind } from '../types';
 import WireframePreview from '../components/wireframe/WireframePreview';
+import { contextTagClass, contextsOf } from '../lib/contexts';
+import { useBoardContexts } from '../components/ContextsContext';
 import { useOpenElementEditor } from '../components/ElementEditorContext';
 import { useOpenWireframeEditor } from '../components/wireframe/WireframeEditorContext';
 
@@ -32,12 +34,21 @@ const HANDLES: { id: string; position: Position }[] = [
  */
 function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<BoardNode>) {
   const { deleteElements } = useReactFlow();
+  const { contexts: boardContexts, activeContexts } = useBoardContexts();
   const openElementEditor = useOpenElementEditor();
   const openWireframeEditor = useOpenWireframeEditor();
 
   const style = isCqrsKind(type) ? ELEMENT_STYLES[type] : ELEMENT_STYLES.command;
   const Icon = style.icon;
   const contentLines = (data.content ?? '').split('\n').filter((line) => line.trim().length > 0);
+
+  // DCB contexts: events show their context tags (only meaningful once a
+  // second context exists) and dim when they belong to none of the
+  // highlighted contexts.
+  const isEvent = type === 'event';
+  const eventContexts = isEvent ? contextsOf(data) : [];
+  const showTags = isEvent && boardContexts.length >= 2;
+  const dimmed = activeContexts.length > 0 && isEvent && !eventContexts.some((c) => activeContexts.includes(c));
 
   // Inside a slice the footprint is pinned to the cell height; the card overlay
   // expands over the grid while hovered or selected (but not mid-drag, so the
@@ -74,7 +85,7 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
       (line) => line.offsetTop + line.offsetHeight - body.offsetTop > available + 1,
     ).length;
     setOverflowHint(hiddenLines > 0 ? `+${hiddenLines} more…` : '…');
-  }, [slotted, data.label, data.content, data.wireframe]);
+  }, [slotted, data.label, data.content, data.wireframe, data.contexts, boardContexts.length]);
 
   let cardSize = '';
   let bodyClip = '';
@@ -93,7 +104,7 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
 
   return (
     <div
-      className="group relative w-44"
+      className={`group relative w-44 transition-opacity ${dimmed ? 'opacity-25' : ''}`}
       style={slotted ? { height: SLOTTED_NODE_HEIGHT } : undefined}
       onDoubleClick={(event) => {
         event.stopPropagation();
@@ -159,6 +170,18 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
 
         <div ref={bodyRef} className={`px-2.5 pt-1 pb-2.5 ${bodyClip}`} title="Double-click to edit">
           <span className="block min-h-5 text-sm leading-snug font-semibold break-words">{data.label}</span>
+          {showTags && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {eventContexts.map((name) => (
+                <span
+                  key={name}
+                  className={`rounded-full border px-1.5 py-px text-[9px] leading-tight font-semibold ${contextTagClass(name)}`}
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
           {type === 'screen' && data.wireframe && (
             <div className="mt-1.5 overflow-hidden rounded-md border border-zinc-300 bg-white shadow-sm">
               <WireframePreview wireframe={data.wireframe} className="block h-16 w-full" />

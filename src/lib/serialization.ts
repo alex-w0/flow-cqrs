@@ -7,6 +7,7 @@ import {
   WIREFRAME_WIDTH,
   isCqrsKind,
 } from '../types';
+import { DEFAULT_CONTEXT, sanitizeBoardContexts } from './contexts';
 import { sliceHeight, sliceWidth } from './grid';
 
 const WIREFRAME_KINDS = new Set(['button', 'input', 'image', 'checkbox', 'heading', 'text', 'rect']);
@@ -68,11 +69,13 @@ export interface ParsedBoard {
   nodes: BoardNode[];
   edges: BoardEdge[];
   viewport: Viewport | null;
+  /** Board-level DCB context list; always non-empty with the default context first. */
+  contexts: string[];
 }
 
-/** Serializes the full flow (nodes, edges, viewport) and triggers a browser download. */
-export function downloadBoard(flow: ReactFlowJsonObject<BoardNode, BoardEdge>): void {
-  const json = JSON.stringify(flow, null, 2);
+/** Serializes the full flow (nodes, edges, viewport, contexts) and triggers a browser download. */
+export function downloadBoard(flow: ReactFlowJsonObject<BoardNode, BoardEdge>, contexts: string[]): void {
+  const json = JSON.stringify({ ...flow, contexts }, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -104,6 +107,10 @@ export function parseBoardFile(raw: string): ParsedBoard {
   if (!Array.isArray(flow.nodes) || !Array.isArray(flow.edges)) {
     throw new Error('The file is missing the "nodes" or "edges" array.');
   }
+
+  // Pre-feature exports have no contexts key — they sanitize to just the default.
+  const contexts = sanitizeBoardContexts((parsed as Record<string, unknown>).contexts);
+  const contextSet = new Set(contexts);
 
   const nodes: BoardNode[] = [];
   for (const node of flow.nodes) {
@@ -141,8 +148,20 @@ export function parseBoardFile(raw: string): ParsedBoard {
     } else if (isCqrsKind(node.type)) {
       const content = typeof node.data?.content === 'string' && node.data.content.trim() ? node.data.content : undefined;
       const wireframe = node.type === 'screen' ? sanitizeWireframe(node.data?.wireframe) : undefined;
+      // Events keep only context references that exist in the board list. A
+      // missing field (pre-feature exports) gets the default context if the
+      // board has one; an explicit (even empty) list is respected as-is.
+      // Other kinds never carry the field.
+      let nodeContexts: string[] | undefined;
+      if (node.type === 'event') {
+        nodeContexts = Array.isArray(node.data?.contexts)
+          ? node.data.contexts.filter((c): c is string => typeof c === 'string' && contextSet.has(c))
+          : contextSet.has(DEFAULT_CONTEXT)
+            ? [DEFAULT_CONTEXT]
+            : [];
+      }
       // Strip extent from older exports — elements move freely in and out of slices.
-      nodes.push({ ...node, extent: undefined, data: { label, content, wireframe } });
+      nodes.push({ ...node, extent: undefined, data: { label, content, wireframe, contexts: nodeContexts } });
     } else {
       throw new Error(`Node "${node.id}" has unknown type "${node.type}".`);
     }
@@ -176,5 +195,5 @@ export function parseBoardFile(raw: string): ParsedBoard {
       ? flow.viewport
       : null;
 
-  return { nodes: ordered, edges, viewport };
+  return { nodes: ordered, edges, viewport, contexts };
 }
