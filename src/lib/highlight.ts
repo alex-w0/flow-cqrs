@@ -15,8 +15,17 @@ import { contextsOf } from './contexts';
  * The flow-trace set: the origin plus everything downstream of it, following
  * edge direction through every node kind. Used by the play button to show
  * how data flows through the system from a chosen element onward.
+ *
+ * Nodes in `blocked` are never entered: the trace neither includes them nor
+ * flows through them. The origin is always included, even if blocked. This is
+ * how context highlighting constrains a trace — events outside the active
+ * contexts stay dimmed instead of being revived by the trace.
  */
-export function computeDownstream(edges: BoardEdge[], originId: string): Set<string> {
+export function computeDownstream(
+  edges: BoardEdge[],
+  originId: string,
+  blocked: ReadonlySet<string> = new Set(),
+): Set<string> {
   const forward = new Map<string, string[]>();
   for (const edge of edges) {
     const list = forward.get(edge.source);
@@ -28,7 +37,7 @@ export function computeDownstream(edges: BoardEdge[], originId: string): Set<str
   while (queue.length > 0) {
     const current = queue.shift()!;
     for (const next of forward.get(current) ?? []) {
-      if (reached.has(next)) continue;
+      if (reached.has(next) || blocked.has(next)) continue;
       reached.add(next);
       queue.push(next);
     }

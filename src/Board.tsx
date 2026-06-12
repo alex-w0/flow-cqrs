@@ -98,30 +98,38 @@ export default function Board() {
   // traced arrows animate, and the rest of the board is spotlight-dimmed.
   // Clears itself if the origin gets deleted.
   const { originId, stopTrace } = useFlowTrace();
+  // Nodes dimmed by the active context highlighting (empty when none active).
+  // A flow trace is constrained to these: it never revives or flows through a
+  // node the active contexts have dimmed.
+  const contextDimmedIds = useMemo(
+    () => computeDimmedIds(nodes, edges, activeContexts),
+    [nodes, edges, activeContexts],
+  );
   const tracedIds = useMemo(
-    () => (originId !== null ? computeDownstream(edges, originId) : new Set<string>()),
-    [edges, originId],
+    () => (originId !== null ? computeDownstream(edges, originId, contextDimmedIds) : new Set<string>()),
+    [edges, originId, contextDimmedIds],
   );
   useEffect(() => {
     if (originId !== null && !nodes.some((node) => node.id === originId)) stopTrace();
   }, [originId, nodes, stopTrace]);
 
-  // Dimming: an active flow trace spotlights its nodes (superseding context
-  // highlighting); otherwise dim inactive events plus every element whose
-  // flow is only reachable through them. Arrows fade with dimmed endpoints.
-  // Selected edges swap to a white arrowhead to match their white stroke
-  // (set in index.css) — CSS can't recolor SVG marker definitions.
+  // Dimming: an active flow trace spotlights its nodes — and since the trace
+  // excludes context-dimmed nodes, those stay dimmed too; otherwise dim
+  // inactive events plus every element whose flow is only reachable through
+  // them. Arrows fade with dimmed endpoints. Selected edges swap to a white
+  // arrowhead to match their white stroke (set in index.css) — CSS can't
+  // recolor SVG marker definitions.
   const dimmedIds = useMemo(
     () =>
       originId !== null
         ? new Set(nodes.filter((node) => node.type !== 'slice' && !tracedIds.has(node.id)).map((node) => node.id))
-        : computeDimmedIds(nodes, edges, activeContexts),
-    [originId, tracedIds, nodes, edges, activeContexts],
+        : contextDimmedIds,
+    [originId, tracedIds, nodes, contextDimmedIds],
   );
   const displayEdges = useMemo(
     () =>
       edges.map((edge) => {
-        const traced = originId !== null && tracedIds.has(edge.source);
+        const traced = originId !== null && tracedIds.has(edge.source) && tracedIds.has(edge.target);
         const dim = !traced && (dimmedIds.has(edge.source) || dimmedIds.has(edge.target));
         if (!traced && !dim && !edge.selected) return edge;
         return {
