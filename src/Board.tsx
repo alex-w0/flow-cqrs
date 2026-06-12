@@ -1,4 +1,4 @@
-import { useCallback, useRef, type ChangeEvent, type DragEvent } from 'react';
+import { useCallback, useMemo, useRef, type ChangeEvent, type DragEvent } from 'react';
 import {
   Background,
   BackgroundVariant,
@@ -25,9 +25,11 @@ import { useBoardContexts } from './components/ContextsContext';
 import { useDnD } from './components/DnDContext';
 import { useDialog } from './components/Dialog';
 import { useSetDropHighlight, type CellHighlight } from './components/DropHighlightContext';
+import { HighlightDimProvider } from './components/HighlightDimContext';
 import { nodeTypes } from './nodes';
 import { downloadBoard, parseBoardFile } from './lib/serialization';
 import { DEFAULT_CONTEXT } from './lib/contexts';
+import { computeDimmedIds } from './lib/highlight';
 import { nextId } from './lib/id';
 import {
   cellAt,
@@ -83,13 +85,26 @@ export default function Board() {
     BoardEdge
   >();
   const [dragKind, setDragKind] = useDnD();
-  const { contexts, replaceContexts } = useBoardContexts();
+  const { contexts, activeContexts, replaceContexts } = useBoardContexts();
   const setDropHighlight = useSetDropHighlight();
   const dialog = useDialog();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const clickAddCount = useRef(0);
   /** Positions at drag start, so a drop on an occupied cell can revert. */
   const dragOrigins = useRef(new Map<string, XYPosition>());
+
+  // Context highlighting: dim inactive events plus every element whose flow
+  // is only reachable through them; arrows fade with their dimmed endpoints.
+  const dimmedIds = useMemo(() => computeDimmedIds(nodes, edges, activeContexts), [nodes, edges, activeContexts]);
+  const displayEdges = useMemo(
+    () =>
+      dimmedIds.size === 0
+        ? edges
+        : edges.map((edge) =>
+            dimmedIds.has(edge.source) || dimmedIds.has(edge.target) ? { ...edge, className: 'dimmed-edge' } : edge,
+          ),
+    [edges, dimmedIds],
+  );
 
   /** The cell (if any) under a drag at `center`, flagged invalid when already occupied. */
   const highlightAt = useCallback(
@@ -377,57 +392,59 @@ export default function Board() {
   }, [dialog, setNodes, setEdges, replaceContexts]);
 
   return (
-    <ReactFlow<BoardNode, BoardEdge>
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onReconnect={onReconnect}
-      onNodeDragStart={onNodeDragStart}
-      onNodeDrag={onNodeDrag}
-      onNodeDragStop={onNodeDragStop}
-      onDrop={onDrop}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      nodeTypes={nodeTypes}
-      defaultEdgeOptions={defaultEdgeOptions}
-      connectionLineType={ConnectionLineType.SmoothStep}
-      connectionMode={ConnectionMode.Loose}
-      connectionRadius={28}
-      isValidConnection={(connection) => connection.source !== connection.target}
-      deleteKeyCode={['Backspace', 'Delete']}
-      colorMode="dark"
-      fitView
-      fitViewOptions={{ padding: 0.25 }}
-      minZoom={0.15}
-      maxZoom={2.5}
-      className="bg-slate-950"
-    >
-      <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#293548" />
-      <MiniMap
-        pannable
-        zoomable
-        position="bottom-right"
-        className="!bg-slate-900"
-        maskColor="rgb(2 6 23 / 0.7)"
-        nodeColor={(node) => MINIMAP_COLORS[node.type ?? ''] ?? SLICE_ACCENT}
-        nodeStrokeColor={(node) => (isCqrsKind(node.type) ? 'transparent' : '#475569')}
-      />
-      <Panel position="top-left">
-        <Palette onAdd={onPaletteAdd} />
-      </Panel>
-      <Panel position="top-center">
-        <Toolbar onExport={onExport} onImport={onImportClick} onClear={onClear} />
-      </Panel>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,application/json"
-        className="hidden"
-        onChange={onImportFile}
-      />
-    </ReactFlow>
+    <HighlightDimProvider value={dimmedIds}>
+      <ReactFlow<BoardNode, BoardEdge>
+        nodes={nodes}
+        edges={displayEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onReconnect={onReconnect}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDrag={onNodeDrag}
+        onNodeDragStop={onNodeDragStop}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        nodeTypes={nodeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        connectionMode={ConnectionMode.Loose}
+        connectionRadius={28}
+        isValidConnection={(connection) => connection.source !== connection.target}
+        deleteKeyCode={['Backspace', 'Delete']}
+        colorMode="dark"
+        fitView
+        fitViewOptions={{ padding: 0.25 }}
+        minZoom={0.15}
+        maxZoom={2.5}
+        className="bg-slate-950"
+      >
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#293548" />
+        <MiniMap
+          pannable
+          zoomable
+          position="bottom-right"
+          className="!bg-slate-900"
+          maskColor="rgb(2 6 23 / 0.7)"
+          nodeColor={(node) => MINIMAP_COLORS[node.type ?? ''] ?? SLICE_ACCENT}
+          nodeStrokeColor={(node) => (isCqrsKind(node.type) ? 'transparent' : '#475569')}
+        />
+        <Panel position="top-left">
+          <Palette onAdd={onPaletteAdd} />
+        </Panel>
+        <Panel position="top-center">
+          <Toolbar onExport={onExport} onImport={onImportClick} onClear={onClear} />
+        </Panel>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={onImportFile}
+        />
+      </ReactFlow>
+    </HighlightDimProvider>
   );
 }
 

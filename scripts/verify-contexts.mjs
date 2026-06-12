@@ -79,17 +79,21 @@ try {
   check('both tags on card after assignment', tags.includes('default') && tags.includes('Student'));
   await page.screenshot({ path: '/tmp/em-contexts-tags.png' });
 
-  // 4. Multi-context highlighting: Billing alone dims the event; adding
-  //    Student to the active set un-dims it.
+  // 4. Multi-context highlighting: Billing alone dims the event — and its
+  //    whole connected chain (command upstream); adding Student to the
+  //    active set un-dims both.
   await openManager();
   await addContext('Billing');
   await toggleHighlight('Billing');
   check('event dims when only a foreign context is highlighted', await eventDimmed());
+  const commandDimmedWithBilling = await page.$eval('[data-id="command_demo"] .group', (el) =>
+    el.className.includes('opacity-25'));
+  check('connected command dims with its event', commandDimmedWithBilling);
   await toggleHighlight('Student');
   check('event undims when one of multiple highlighted contexts matches', !(await eventDimmed()));
-  const commandDimmed = await page.$eval('[data-id="command_demo"] .group', (el) =>
+  const commandDimmedWithStudent = await page.$eval('[data-id="command_demo"] .group', (el) =>
     el.className.includes('opacity-25'));
-  check('command never dims', !commandDimmed);
+  check('connected command undims with its event', !commandDimmedWithStudent);
   await closeManager();
   const toolbarText = await page.$eval('button[title="Manage contexts"]', (el) => el.textContent);
   check('toolbar shows both active context pills', toolbarText.includes('Billing') && toolbarText.includes('Student'));

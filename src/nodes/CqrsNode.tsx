@@ -6,6 +6,7 @@ import { ELEMENT_STYLES, SLOTTED_NODE_HEIGHT, isCqrsKind } from '../types';
 import WireframePreview from '../components/wireframe/WireframePreview';
 import { contextTagClass, contextsOf } from '../lib/contexts';
 import { useBoardContexts } from '../components/ContextsContext';
+import { useDimmedNodes } from '../components/HighlightDimContext';
 import { useOpenElementEditor } from '../components/ElementEditorContext';
 import { useOpenWireframeEditor } from '../components/wireframe/WireframeEditorContext';
 
@@ -34,7 +35,7 @@ const HANDLES: { id: string; position: Position }[] = [
  */
 function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<BoardNode>) {
   const { deleteElements } = useReactFlow();
-  const { contexts: boardContexts, activeContexts } = useBoardContexts();
+  const { contexts: boardContexts } = useBoardContexts();
   const openElementEditor = useOpenElementEditor();
   const openWireframeEditor = useOpenWireframeEditor();
 
@@ -43,12 +44,12 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
   const contentLines = (data.content ?? '').split('\n').filter((line) => line.trim().length > 0);
 
   // DCB contexts: events show their context tags (only meaningful once a
-  // second context exists) and dim when they belong to none of the
-  // highlighted contexts.
+  // second context exists). Dimming is decided board-wide in lib/highlight.ts
+  // — inactive events plus every element only reachable through them.
   const isEvent = type === 'event';
   const eventContexts = isEvent ? contextsOf(data) : [];
   const showTags = isEvent && boardContexts.length >= 2;
-  const dimmed = activeContexts.length > 0 && isEvent && !eventContexts.some((c) => activeContexts.includes(c));
+  const dimmed = useDimmedNodes().has(id);
 
   // Inside a slice the footprint is pinned to the cell height; the card overlay
   // expands over the grid while hovered or selected (but not mid-drag, so the

@@ -52,6 +52,12 @@ body,
   stroke-width: 1.75;
 }
 
+/* Edges fade together with their dimmed endpoints during context highlighting. */
+.react-flow__edge.dimmed-edge {
+  opacity: 0.25;
+  transition: opacity 0.15s ease;
+}
+
 .react-flow__edge:hover .react-flow__edge-path {
   stroke-width: 2.5;
   cursor: pointer;
