@@ -9,6 +9,7 @@ import {
   Panel,
   ReactFlow,
   addEdge,
+  reconnectEdge,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -104,16 +105,34 @@ export default function Board() {
     [getNodes],
   );
 
-  // Edges inherit the accent color of their source element for readable flows.
+  /** Edges inherit the accent color of their source element for readable flows. */
+  const accentOf = useCallback(
+    (sourceId: string | null): string => {
+      const source = getNodes().find((node) => node.id === sourceId);
+      return source && isCqrsKind(source.type) ? ELEMENT_STYLES[source.type].accent : EDGE_NEUTRAL;
+    },
+    [getNodes],
+  );
+
   const onConnect = useCallback(
     (connection: Connection) => {
-      const source = getNodes().find((node) => node.id === connection.source);
-      const accent = source && isCqrsKind(source.type) ? ELEMENT_STYLES[source.type].accent : EDGE_NEUTRAL;
+      const accent = accentOf(connection.source);
       setEdges((eds) =>
         addEdge({ ...connection, style: { stroke: accent }, markerEnd: edgeMarker(accent) }, eds),
       );
     },
-    [getNodes, setEdges],
+    [accentOf, setEdges],
+  );
+
+  /** Dragging an existing edge endpoint onto another node re-points the arrow. */
+  const onReconnect = useCallback(
+    (oldEdge: BoardEdge, connection: Connection) => {
+      const accent = accentOf(connection.source);
+      setEdges((eds) =>
+        reconnectEdge({ ...oldEdge, style: { stroke: accent }, markerEnd: edgeMarker(accent) }, connection, eds),
+      );
+    },
+    [accentOf, setEdges],
   );
 
   /** Adds a palette element centered on a flow-space point; on a slice it snaps into a free cell. */
@@ -350,6 +369,7 @@ export default function Board() {
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      onReconnect={onReconnect}
       onNodeDragStart={onNodeDragStart}
       onNodeDrag={onNodeDrag}
       onNodeDragStop={onNodeDragStop}

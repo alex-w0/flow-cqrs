@@ -2,6 +2,7 @@ import type { XYPosition } from '@xyflow/react';
 import type { BoardNode } from '../types';
 import {
   CELL_HEIGHT,
+  CELL_VPAD,
   CELL_WIDTH,
   DEFAULT_COLUMNS,
   DEFAULT_LANES,
@@ -63,7 +64,7 @@ export function cellAt(slice: BoardNode, x: number, y: number): Cell {
 export function cellSlotPosition(cell: Cell): XYPosition {
   return {
     x: LANE_GUTTER + cell.col * CELL_WIDTH + (CELL_WIDTH - NODE_WIDTH) / 2,
-    y: SLICE_HEADER_HEIGHT + cell.row * CELL_HEIGHT + 14,
+    y: SLICE_HEADER_HEIGHT + cell.row * CELL_HEIGHT + CELL_VPAD,
   };
 }
 

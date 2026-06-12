@@ -3,6 +3,7 @@ import Board from './Board';
 import { DialogProvider } from './components/Dialog';
 import { DnDProvider } from './components/DnDContext';
 import { DropHighlightProvider } from './components/DropHighlightContext';
+import { ElementEditorProvider } from './components/ElementEditorContext';
 import { WireframeEditorProvider } from './components/wireframe/WireframeEditorContext';
 
 export default function App() {
@@ -11,11 +12,13 @@ export default function App() {
       <DialogProvider>
         <ReactFlowProvider>
           <WireframeEditorProvider>
-            <DnDProvider>
-              <DropHighlightProvider>
-                <Board />
-              </DropHighlightProvider>
-            </DnDProvider>
+            <ElementEditorProvider>
+              <DnDProvider>
+                <DropHighlightProvider>
+                  <Board />
+                </DropHighlightProvider>
+              </DnDProvider>
+            </ElementEditorProvider>
           </WireframeEditorProvider>
         </ReactFlowProvider>
       </DialogProvider>

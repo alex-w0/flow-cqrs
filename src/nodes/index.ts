@@ -7,6 +7,6 @@ export const nodeTypes: NodeTypes = {
   event: CqrsNode,
   readmodel: CqrsNode,
   screen: CqrsNode,
-  automation: CqrsNode,
+  processor: CqrsNode,
   slice: SliceNode,
 };

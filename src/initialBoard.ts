@@ -6,7 +6,7 @@ import { cellSlotPosition, sliceHeight, sliceWidth } from './lib/grid';
 /**
  * A small seed model demonstrating one vertical slice on the default grid
  * (Actor / Interaction / Events / Spec Lane × 3 columns):
- * Screen -> Command -> Event -> Read Model, plus a free automation node.
+ * Screen -> Command -> Event -> Read Model, plus a free processor node.
  * Slices must precede their children in the array.
  */
 export const initialNodes: BoardNode[] = [
@@ -63,8 +63,8 @@ export const initialNodes: BoardNode[] = [
     data: { label: 'Cart Items', content: 'items: CartItem[]\ntotal: Money' },
   },
   {
-    id: 'automation_demo',
-    type: 'automation',
+    id: 'processor_demo',
+    type: 'processor',
     position: { x: sliceWidth(DEFAULT_COLUMNS) + 120, y: 340 },
     data: { label: 'Sync Inventory' },
   },
@@ -93,5 +93,5 @@ export const initialEdges: BoardEdge[] = [
   edge('edge_demo_1', 'screen_demo', 'command_demo', ELEMENT_STYLES.screen.accent, 'right', 'left'),
   edge('edge_demo_2', 'command_demo', 'event_demo', ELEMENT_STYLES.command.accent, 'bottom', 'top'),
   edge('edge_demo_3', 'event_demo', 'readmodel_demo', ELEMENT_STYLES.event.accent, 'right', 'bottom'),
-  edge('edge_demo_4', 'event_demo', 'automation_demo', ELEMENT_STYLES.event.accent, 'right', 'left'),
+  edge('edge_demo_4', 'event_demo', 'processor_demo', ELEMENT_STYLES.event.accent, 'right', 'left'),
 ];

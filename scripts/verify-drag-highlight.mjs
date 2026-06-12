@@ -1,5 +1,5 @@
 /**
- * Smoke test for the drop-target cell highlight: drags the free automation
+ * Smoke test for the drop-target cell highlight: drags the free processor
  * node over the demo slice (an empty cell, then an occupied one) and checks
  * that the overlay appears with the right validity color mid-drag.
  *
@@ -19,7 +19,7 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
   await page.goto('http://localhost:4173', { waitUntil: 'networkidle0' });
-  await page.waitForSelector('.react-flow__node-automation');
+  await page.waitForSelector('.react-flow__node-processor');
 
   const box = async (selector) => {
     const handle = await page.$(selector);
@@ -27,7 +27,7 @@ try {
     return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   };
 
-  const automation = await box('[data-id="automation_demo"]');
+  const processor = await box('[data-id="processor_demo"]');
   const emptyActorCell = await box('[data-id="slice_demo"]'); // slice center-x, but use Actor lane y
   const slice = await page.$('[data-id="slice_demo"]');
   const sliceBox = await slice.boundingBox();
@@ -36,8 +36,8 @@ try {
   const actorCell = { x: sliceBox.x + (32 + 100) * zoom, y: sliceBox.y + (44 + 74) * zoom };
   const occupiedCell = await box('[data-id="command_demo"]');
 
-  // Drag automation over the empty Actor cell — expect a valid (indigo) highlight.
-  await page.mouse.move(automation.x, automation.y);
+  // Drag processor over the empty Actor cell — expect a valid (indigo) highlight.
+  await page.mouse.move(processor.x, processor.y);
   await page.mouse.down();
   await page.mouse.move(actorCell.x, actorCell.y, { steps: 10 });
   await new Promise((r) => setTimeout(r, 150));

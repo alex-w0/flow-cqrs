@@ -10,7 +10,7 @@ interface PaletteItem {
   swatch: string;
 }
 
-const ELEMENT_ORDER: CqrsKind[] = ['screen', 'command', 'event', 'readmodel', 'automation'];
+const ELEMENT_ORDER: CqrsKind[] = ['screen', 'command', 'event', 'readmodel', 'processor'];
 
 const ITEMS: PaletteItem[] = [
   ...ELEMENT_ORDER.map((kind) => ({

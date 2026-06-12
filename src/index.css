@@ -34,6 +34,20 @@ body,
   scale: 1.45;
 }
 
+/*
+ * A hovered element card pops above its neighbors so its expanded overlay
+ * (full content of a cell-clipped card) is never covered. Matches the
+ * z-index React Flow gives selected nodes; !important is needed to beat
+ * the inline z-index React Flow sets on the node wrapper.
+ */
+.react-flow__node-command:hover,
+.react-flow__node-event:hover,
+.react-flow__node-readmodel:hover,
+.react-flow__node-screen:hover,
+.react-flow__node-processor:hover {
+  z-index: 1000 !important;
+}
+
 .react-flow__edge .react-flow__edge-path {
   stroke-width: 1.75;
 }

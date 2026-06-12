@@ -1,9 +1,9 @@
 import type { Edge, Node } from '@xyflow/react';
 import type { LucideIcon } from 'lucide-react';
-import { Bot, Columns3, Database, Monitor, Send, Zap } from 'lucide-react';
+import { Columns3, Database, Monitor, Send, Settings, Zap } from 'lucide-react';
 
 /** The five CQRS / Event Modeling element kinds rendered as sticky-note nodes. */
-export type CqrsKind = 'command' | 'event' | 'readmodel' | 'screen' | 'automation';
+export type CqrsKind = 'command' | 'event' | 'readmodel' | 'screen' | 'processor';
 
 /** Everything that can be added from the palette (elements + slices). */
 export type PaletteKind = CqrsKind | 'slice';
@@ -93,10 +93,10 @@ export const ELEMENT_STYLES: Record<CqrsKind, ElementStyle> = {
     card: 'bg-zinc-100 border-zinc-300 text-zinc-900',
     accent: '#e4e4e7',
   },
-  automation: {
-    title: 'Automation',
-    defaultLabel: 'New Automation',
-    icon: Bot,
+  processor: {
+    title: 'Processor',
+    defaultLabel: 'New Processor',
+    icon: Settings,
     card: 'bg-fuchsia-400 border-fuchsia-300 text-fuchsia-950',
     accent: '#e879f9',
   },
@@ -115,6 +115,10 @@ export const NODE_HEIGHT = 76;
 /** Slice grid geometry. */
 export const CELL_WIDTH = 200;
 export const CELL_HEIGHT = 148;
+/** Vertical margin between a card and the edges of its cell. */
+export const CELL_VPAD = 14;
+/** Cards inside a slice are fixed to this height so they always fill — and never overflow — their cell. */
+export const SLOTTED_NODE_HEIGHT = CELL_HEIGHT - 2 * CELL_VPAD;
 /** Width of the swimlane-label gutter on the left edge of a slice. */
 export const LANE_GUTTER = 32;
 /** Vertical space taken by the slice title bar — the grid starts below it. */
