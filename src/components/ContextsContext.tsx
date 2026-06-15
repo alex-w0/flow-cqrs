@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { useReactFlow } from '@xyflow/react';
 import type { BoardEdge, BoardNode } from '../types';
 import { DEFAULT_CONTEXT, sanitizeBoardContexts } from '../lib/contexts';
+import { loadBoard } from '../lib/persistence';
 import ContextsManager from './ContextsManager';
 
 interface ContextsApi {
@@ -36,7 +37,9 @@ export function useBoardContexts(): ContextsApi {
  * or deleting a context rewrites the `contexts` of every referencing event.
  */
 export function ContextsProvider({ children }: { children: ReactNode }) {
-  const [contexts, setContexts] = useState<string[]>([DEFAULT_CONTEXT]);
+  // Restore the autosaved context list (Board restores nodes/edges from the
+  // same storage entry); a fresh board starts with just the default context.
+  const [contexts, setContexts] = useState<string[]>(() => loadBoard()?.contexts ?? [DEFAULT_CONTEXT]);
   const [activeContexts, setActiveContexts] = useState<string[]>([]);
   const [managerOpen, setManagerOpen] = useState(false);
   const { setNodes } = useReactFlow<BoardNode, BoardEdge>();

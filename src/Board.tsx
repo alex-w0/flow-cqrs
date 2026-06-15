@@ -30,6 +30,7 @@ import { HighlightDimProvider } from './components/HighlightDimContext';
 import { nodeTypes } from './nodes';
 import { DEFAULT_CONTEXT } from './lib/contexts';
 import { downloadBoard, parseBoardFile } from './lib/serialization';
+import { clearBoard, loadBoard, saveBoard } from './lib/persistence';
 import { computeDimmedIds, computeDownstream } from './lib/highlight';
 import { nextId } from './lib/id';
 import {
@@ -79,8 +80,12 @@ function slicesFirst(nodes: BoardNode[]): BoardNode[] {
 }
 
 export default function Board() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<BoardNode>(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<BoardEdge>(initialEdges);
+  // Rehydrate the autosaved board (if any) before the flow state initializes,
+  // so a refresh restores work with no flash of the empty board. Contexts are
+  // restored separately, in ContextsProvider, from the same storage entry.
+  const persisted = useMemo(loadBoard, []);
+  const [nodes, setNodes, onNodesChange] = useNodesState<BoardNode>(persisted?.nodes ?? initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<BoardEdge>(persisted?.edges ?? initialEdges);
   const { screenToFlowPosition, getNodes, getInternalNode, setViewport, toObject } = useReactFlow<
     BoardNode,
     BoardEdge
@@ -112,6 +117,17 @@ export default function Board() {
   useEffect(() => {
     if (originId !== null && !nodes.some((node) => node.id === originId)) stopTrace();
   }, [originId, nodes, stopTrace]);
+
+  // Autosave to localStorage on every board change so the work survives a
+  // refresh. Debounced because node dragging fires changes continuously and
+  // each save serializes the whole board. The viewport is snapshotted from
+  // React Flow at save time so pan/zoom is restored too.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      saveBoard({ nodes, edges, contexts, viewport: toObject().viewport });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [nodes, edges, contexts, toObject]);
 
   // Dimming: an active flow trace spotlights its nodes — and since the trace
   // excludes context-dimmed nodes, those stay dimmed too; otherwise dim
@@ -396,6 +412,10 @@ export default function Board() {
             viewport,
             contexts: importedContexts,
           } = parseBoardFile(String(reader.result));
+          // Drop the autosave first so a partially-applied import can't leave
+          // stale data behind; the autosave effect re-persists the imported
+          // board on the next change cycle.
+          clearBoard();
           setNodes(importedNodes);
           setEdges(importedEdges);
           replaceContexts(importedContexts);
@@ -457,7 +477,9 @@ export default function Board() {
           // selection/hover elevation for cards is done in CSS instead.
           zIndexMode="manual"
           colorMode="dark"
-          fitView
+          // Restore the saved viewport on a refresh; otherwise frame the board.
+          fitView={!persisted?.viewport}
+          defaultViewport={persisted?.viewport ?? undefined}
           fitViewOptions={{ padding: 0.25 }}
           minZoom={0.15}
           maxZoom={2.5}
