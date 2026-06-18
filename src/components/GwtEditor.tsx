@@ -1,6 +1,6 @@
-import { ArrowDown, ArrowUp, Link2, Trash2, Type } from 'lucide-react';
+import { ArrowDown, ArrowUp, Link2, Trash2, TriangleAlert, Type } from 'lucide-react';
 import type { CqrsKind, GwtData, GwtItem, GwtSection } from '../types';
-import { GWT_SECTIONS } from '../types';
+import { DEFAULT_EXCEPTION_TEXT, GWT_SECTIONS } from '../types';
 import GwtRefPicker from './GwtRefPicker';
 
 /** A board element a GWT section may reference, in the editor's dropdown. */
@@ -19,9 +19,10 @@ interface GwtEditorProps {
 
 /**
  * Section-by-section editor for a Given/When/Then scenario. Each section is an
- * ordered list of rows; a row is either a reference to another board element
- * (chosen from a dropdown) or a free-text note. Rows can be reordered and
- * removed. References stay in sync with the board because only ids are stored.
+ * ordered list of rows; a row is a reference to another board element (chosen
+ * from a dropdown), a free-text note, or — in the Then section only — an
+ * exception (a red-tagged expected error). Rows can be reordered and removed.
+ * References stay in sync with the board because only ids are stored.
  */
 export default function GwtEditor({ value, options, onChange }: GwtEditorProps) {
   const setSection = (key: GwtSection, items: GwtItem[]) => onChange({ ...value, [key]: items });
@@ -36,6 +37,9 @@ export default function GwtEditor({ value, options, onChange }: GwtEditorProps) 
   // element…"; a row left unselected is dropped on save by cleanGwt.
   const addRef = (key: GwtSection) => setSection(key, [...value[key], { kind: 'ref', ref: '' }]);
   const addText = (key: GwtSection) => setSection(key, [...value[key], { kind: 'text', text: '' }]);
+  // Exceptions start from a default text the user can override.
+  const addException = (key: GwtSection) =>
+    setSection(key, [...value[key], { kind: 'exception', text: DEFAULT_EXCEPTION_TEXT }]);
   const setItem = (key: GwtSection, index: number, item: GwtItem) =>
     setSection(
       key,
@@ -100,13 +104,22 @@ export default function GwtEditor({ value, options, onChange }: GwtEditorProps) 
                         onChange={(option) => setItem(key, index, refItem(option))}
                       />
                     ) : (
-                      <input
-                        value={item.text}
-                        placeholder="Free-text note"
-                        className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400"
-                        onChange={(event) => setItem(key, index, { kind: 'text', text: event.target.value })}
-                        onKeyDown={(event) => event.stopPropagation()}
-                      />
+                      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                        {item.kind === 'exception' && (
+                          <TriangleAlert size={14} className="shrink-0 text-red-400" />
+                        )}
+                        <input
+                          value={item.text}
+                          placeholder={item.kind === 'exception' ? 'Exception' : 'Free-text note'}
+                          className={`min-w-0 flex-1 rounded-md border bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none placeholder:text-slate-500 ${
+                            item.kind === 'exception'
+                              ? 'border-red-800 focus:border-red-400'
+                              : 'border-slate-700 focus:border-indigo-400'
+                          }`}
+                          onChange={(event) => setItem(key, index, { ...item, text: event.target.value })}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        />
+                      </div>
                     )}
 
                     <button
@@ -133,6 +146,15 @@ export default function GwtEditor({ value, options, onChange }: GwtEditorProps) 
               >
                 <Link2 size={12} /> Reference
               </button>
+              {key === 'then' && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-md border border-red-800 px-2 py-1 text-xs font-medium text-red-300 transition-colors hover:border-red-500 hover:text-red-200"
+                  onClick={() => addException(key)}
+                >
+                  <TriangleAlert size={12} /> Exception
+                </button>
+              )}
               <button
                 type="button"
                 className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white"

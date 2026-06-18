@@ -39,16 +39,22 @@ export const WIREFRAME_WIDTH = 320;
 export const WIREFRAME_HEIGHT = 220;
 
 /**
- * One line of a Given/When/Then section: either a reference to another element
- * on the board (by node id) or a free-text note for things not (yet) modeled.
- *
- * A reference also caches the target's `label` and `type` as a snapshot: it is
- * refreshed whenever the element is picked and when the element is deleted, so
- * a dangling reference can still show what it pointed at instead of a blank.
+ * One line of a Given/When/Then section:
+ *  - `ref`: a reference to another element on the board (by node id). It also
+ *    caches the target's `label`/`type` as a snapshot, refreshed when the
+ *    element is picked and when it is deleted, so a dangling reference can
+ *    still show what it pointed at instead of a blank.
+ *  - `text`: a free-text note for things not (yet) modeled.
+ *  - `exception`: a free-text expected error (THEN only), shown as a red tag;
+ *    starts from a default text the user can override.
  */
 export type GwtItem =
   | { kind: 'ref'; ref: string; label?: string; type?: CqrsKind }
-  | { kind: 'text'; text: string };
+  | { kind: 'text'; text: string }
+  | { kind: 'exception'; text: string };
+
+/** Default text for a newly added exception, overridable by the user. */
+export const DEFAULT_EXCEPTION_TEXT = 'Exception';
 
 /** The three sections of a Given-When-Then scenario. */
 export type GwtSection = 'given' | 'when' | 'then';

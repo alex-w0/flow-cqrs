@@ -86,6 +86,8 @@ function sanitizeGwt(value: unknown): GwtData | undefined {
         candidate = refItem;
       } else if (item.kind === 'text' && typeof item.text === 'string') {
         candidate = { kind: 'text', text: item.text };
+      } else if (item.kind === 'exception' && typeof item.text === 'string') {
+        candidate = { kind: 'exception', text: item.text };
       }
       // Same blank-row policy as the editor's cleanGwt, via the shared predicate.
       if (candidate && isMeaningfulGwtItem(candidate)) items.push(candidate);
@@ -221,7 +223,7 @@ export function parseBoardFile(raw: string): ParsedBoard {
     if (!gwt) continue;
     const keep = (items: GwtItem[]) =>
       items.filter((item) => {
-        if (item.kind === 'text') return true;
+        if (item.kind !== 'ref') return true;
         const liveKind = nodeKindById.get(item.ref);
         if (liveKind !== undefined) return GWT_REF_KINDS.includes(liveKind as CqrsKind);
         return Boolean(item.label);

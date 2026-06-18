@@ -6,10 +6,18 @@ import { EDGE_NEUTRAL, ELEMENT_STYLES, GWT_SECTIONS, isCqrsKind } from '../types
 /** A GWT reference resolved against the live board: the target's label and kind. */
 type ResolvedRef = { label: string; type: string };
 
-/** Renders one GWT item — a colored chip for a reference, mono text for a note. */
+/** Renders one GWT item — a colored chip for a reference, a red tag for an exception, mono text for a note. */
 function GwtItemView({ item, refMap }: { item: GwtItem; refMap: Map<string, ResolvedRef | null> }) {
   if (item.kind === 'text') {
     return <span className="font-mono opacity-80">{item.text}</span>;
+  }
+  if (item.kind === 'exception') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded bg-red-600 px-1 py-px font-semibold text-white">
+        <span className="h-2 w-2 shrink-0 rounded-full bg-red-300" />
+        {item.text}
+      </span>
+    );
   }
   // Prefer the live element; fall back to the cached snapshot so a deleted
   // reference still shows what it pointed at. An empty label (e.g. from a
