@@ -1,9 +1,9 @@
 import type { Edge, Node } from '@xyflow/react';
 import type { LucideIcon } from 'lucide-react';
-import { Columns3, Database, Monitor, Send, Settings, Zap } from 'lucide-react';
+import { Columns3, Database, ListChecks, Monitor, Send, Settings, Zap } from 'lucide-react';
 
-/** The five CQRS / Event Modeling element kinds rendered as sticky-note nodes. */
-export type CqrsKind = 'command' | 'event' | 'readmodel' | 'screen' | 'processor';
+/** The CQRS / Event Modeling element kinds rendered as sticky-note nodes. */
+export type CqrsKind = 'command' | 'event' | 'readmodel' | 'screen' | 'processor' | 'gwt';
 
 /** Everything that can be added from the palette (elements + slices). */
 export type PaletteKind = CqrsKind | 'slice';
@@ -38,6 +38,24 @@ export interface Wireframe {
 export const WIREFRAME_WIDTH = 320;
 export const WIREFRAME_HEIGHT = 220;
 
+/**
+ * One line of a Given/When/Then section: either a reference to another element
+ * on the board (by node id) or a free-text note for things not (yet) modeled.
+ *
+ * A reference also caches the target's `label` and `type` as a snapshot: it is
+ * refreshed whenever the element is picked and when the element is deleted, so
+ * a dangling reference can still show what it pointed at instead of a blank.
+ */
+export type GwtItem =
+  | { kind: 'ref'; ref: string; label?: string; type?: CqrsKind }
+  | { kind: 'text'; text: string };
+
+/** The three sections of a Given-When-Then scenario. */
+export type GwtSection = 'given' | 'when' | 'then';
+
+/** GWT only: the ordered items of each scenario section. */
+export type GwtData = Record<GwtSection, GwtItem[]>;
+
 export interface BoardNodeData {
   label: string;
   /** Optional body text for CQRS elements — e.g. command/event attributes, one per line. */
@@ -50,6 +68,8 @@ export interface BoardNodeData {
   columns?: number;
   /** Slice only: swimlane names, top to bottom. */
   lanes?: string[];
+  /** GWT only: the Given/When/Then scenario specification. */
+  gwt?: GwtData;
   [key: string]: unknown;
 }
 
@@ -102,7 +122,42 @@ export const ELEMENT_STYLES: Record<CqrsKind, ElementStyle> = {
     card: 'bg-fuchsia-400 border-fuchsia-300 text-fuchsia-950',
     accent: '#e879f9',
   },
+  gwt: {
+    title: 'GWT Scenario',
+    defaultLabel: 'New Scenario',
+    icon: ListChecks,
+    card: 'bg-amber-300 border-amber-200 text-amber-950',
+    accent: '#fbbf24',
+  },
 };
+
+/** Section metadata for the GWT card and editor, in display order. */
+export const GWT_SECTIONS: { key: GwtSection; label: string; hint: string }[] = [
+  { key: 'given', label: 'Given', hint: 'Preconditions — usually past events' },
+  { key: 'when', label: 'When', hint: 'The triggering command' },
+  { key: 'then', label: 'Then', hint: 'Expected outcome — events or read models' },
+];
+
+/** Element kinds a GWT section may reference (screens and processors are excluded). */
+export const GWT_REF_KINDS: CqrsKind[] = ['command', 'event', 'readmodel'];
+
+/**
+ * Builds a GwtData by producing each section's items from its key — the single
+ * place the three sections are enumerated, so transforms stay in lockstep.
+ */
+export function buildGwtSections(make: (key: GwtSection) => GwtItem[]): GwtData {
+  return { given: make('given'), when: make('when'), then: make('then') };
+}
+
+/** A scenario row is worth persisting when it names a reference or carries non-blank text. */
+export function isMeaningfulGwtItem(item: GwtItem): boolean {
+  return item.kind === 'ref' ? item.ref.length > 0 : item.text.trim().length > 0;
+}
+
+/** A fresh, empty scenario for newly added GWT elements. */
+export function emptyGwt(): GwtData {
+  return buildGwtSections(() => []);
+}
 
 export const SLICE_ICON = Columns3;
 export const SLICE_ACCENT = '#818cf8';

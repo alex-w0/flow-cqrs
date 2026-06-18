@@ -8,5 +8,6 @@ export const nodeTypes: NodeTypes = {
   readmodel: CqrsNode,
   screen: CqrsNode,
   processor: CqrsNode,
+  gwt: CqrsNode,
   slice: SliceNode,
 };

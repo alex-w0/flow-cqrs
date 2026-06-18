@@ -1,11 +1,14 @@
 import type { ReactFlowJsonObject, Viewport } from '@xyflow/react';
-import type { BoardNode, BoardEdge, Wireframe, WireframeElement, WireframeStroke } from '../types';
+import type { BoardNode, BoardEdge, CqrsKind, GwtData, GwtItem, Wireframe, WireframeElement, WireframeStroke } from '../types';
 import {
   DEFAULT_COLUMNS,
   DEFAULT_LANES,
+  GWT_REF_KINDS,
   WIREFRAME_HEIGHT,
   WIREFRAME_WIDTH,
+  buildGwtSections,
   isCqrsKind,
+  isMeaningfulGwtItem,
 } from '../types';
 import { DEFAULT_CONTEXT, sanitizeBoardContexts } from './contexts';
 import { sliceHeight, sliceWidth } from './grid';
@@ -63,6 +66,35 @@ function sanitizeWireframe(value: unknown): Wireframe | undefined {
     elements,
     strokes,
   };
+}
+
+/** Validates an imported GWT scenario, dropping malformed rows; undefined if nothing valid remains. */
+function sanitizeGwt(value: unknown): GwtData | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const raw = value as Record<string, unknown>;
+  const section = (input: unknown): GwtItem[] => {
+    if (!Array.isArray(input)) return [];
+    const items: GwtItem[] = [];
+    for (const entry of input) {
+      if (!entry || typeof entry !== 'object') continue;
+      const item = entry as Record<string, unknown>;
+      let candidate: GwtItem | null = null;
+      if (item.kind === 'ref' && typeof item.ref === 'string') {
+        const refItem: GwtItem = { kind: 'ref', ref: item.ref };
+        if (typeof item.label === 'string' && item.label) refItem.label = item.label;
+        if (typeof item.type === 'string' && isCqrsKind(item.type)) refItem.type = item.type;
+        candidate = refItem;
+      } else if (item.kind === 'text' && typeof item.text === 'string') {
+        candidate = { kind: 'text', text: item.text };
+      }
+      // Same blank-row policy as the editor's cleanGwt, via the shared predicate.
+      if (candidate && isMeaningfulGwtItem(candidate)) items.push(candidate);
+    }
+    return items;
+  };
+  const result = buildGwtSections((key) => section(raw[key]));
+  if (!result.given.length && !result.when.length && !result.then.length) return undefined;
+  return result;
 }
 
 export interface ParsedBoard {
@@ -149,6 +181,7 @@ export function parseBoardFile(raw: string): ParsedBoard {
     } else if (isCqrsKind(node.type)) {
       const content = typeof node.data?.content === 'string' && node.data.content.trim() ? node.data.content : undefined;
       const wireframe = node.type === 'screen' ? sanitizeWireframe(node.data?.wireframe) : undefined;
+      const gwt = node.type === 'gwt' ? sanitizeGwt(node.data?.gwt) : undefined;
       // Events keep only context references that exist in the board list. A
       // missing field (pre-feature exports) gets the default context if the
       // board has one; an explicit (even empty) list is respected as-is.
@@ -167,14 +200,35 @@ export function parseBoardFile(raw: string): ParsedBoard {
         ...node,
         extent: undefined,
         zIndex: undefined,
-        data: { label, content, wireframe, contexts: nodeContexts },
+        data: { label, content, wireframe, contexts: nodeContexts, gwt },
       });
     } else {
       throw new Error(`Node "${node.id}" has unknown type "${node.type}".`);
     }
   }
 
-  const nodeIds = new Set(nodes.map((n) => n.id));
+  const nodeKindById = new Map(nodes.map((n) => [n.id, n.type]));
+  const nodeIds = new Set(nodeKindById.keys());
+
+  // Reconcile each scenario reference with what survived the import:
+  //  - a live target must be a referenceable kind (command/event/read model);
+  //    a reference to a surviving screen/processor is dropped, matching what
+  //    the editor allows, so the card and editor can't disagree.
+  //  - a missing target is kept only if it carries a snapshot label, so the
+  //    user still sees what was referenced (rendered as a deleted element).
+  for (const node of nodes) {
+    const gwt = node.type === 'gwt' ? node.data.gwt : undefined;
+    if (!gwt) continue;
+    const keep = (items: GwtItem[]) =>
+      items.filter((item) => {
+        if (item.kind === 'text') return true;
+        const liveKind = nodeKindById.get(item.ref);
+        if (liveKind !== undefined) return GWT_REF_KINDS.includes(liveKind as CqrsKind);
+        return Boolean(item.label);
+      });
+    node.data.gwt = buildGwtSections((key) => keep(gwt[key]));
+  }
+
   const edges: BoardEdge[] = [];
   for (const edge of flow.edges) {
     if (!edge || typeof edge.id !== 'string' || typeof edge.source !== 'string' || typeof edge.target !== 'string') {

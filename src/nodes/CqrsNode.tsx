@@ -2,7 +2,8 @@ import { memo, useLayoutEffect, useRef, useState } from 'react';
 import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import { LayoutTemplate, Pencil, Play, Square, X } from 'lucide-react';
 import type { BoardNode } from '../types';
-import { ELEMENT_STYLES, SLOTTED_NODE_HEIGHT, isCqrsKind } from '../types';
+import { ELEMENT_STYLES, SLOTTED_NODE_HEIGHT, emptyGwt, isCqrsKind } from '../types';
+import GwtNodeBody from './GwtNodeBody';
 import WireframePreview from '../components/wireframe/WireframePreview';
 import { contextTagClass, contextsOf } from '../lib/contexts';
 import { useBoardContexts } from '../components/ContextsContext';
@@ -93,7 +94,7 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
       (line) => line.offsetTop + line.offsetHeight - body.offsetTop > available + 1,
     ).length;
     setOverflowHint(hiddenLines > 0 ? `+${hiddenLines} more…` : '…');
-  }, [slotted, data.label, data.content, data.wireframe, data.contexts, boardContexts.length]);
+  }, [slotted, data.label, data.content, data.wireframe, data.contexts, data.gwt, boardContexts.length]);
 
   let cardSize = '';
   let bodyClip = '';
@@ -135,7 +136,7 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
               selected || isTraceOrigin ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
             }`}
           >
-            {type !== 'readmodel' && (
+            {type !== 'readmodel' && type !== 'gwt' && (
               <button
                 type="button"
                 title={isTraceOrigin ? 'Stop data flow' : 'Play data flow'}
@@ -192,31 +193,37 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
 
         <div ref={bodyRef} className={`px-2.5 pt-1 pb-2.5 ${bodyClip}`} title="Double-click to edit">
           <span className="block min-h-5 text-sm leading-snug font-semibold break-words">{data.label}</span>
-          {showTags && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {eventContexts.map((name) => (
-                <span
-                  key={name}
-                  className={`rounded-full border px-1.5 py-px text-[9px] leading-tight font-semibold ${contextTagClass(name)}`}
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-          )}
-          {type === 'screen' && data.wireframe && (
-            <div className="mt-1.5 overflow-hidden rounded-md border border-zinc-300 bg-white shadow-sm">
-              <WireframePreview wireframe={data.wireframe} className="block h-16 w-full" />
-            </div>
-          )}
-          {contentLines.length > 0 && (
-            <ul className="mt-1.5 space-y-0.5 border-t border-black/15 pt-1.5 font-mono text-[10px] leading-tight opacity-80">
-              {contentLines.map((line, index) => (
-                <li key={index} className="break-words">
-                  {line}
-                </li>
-              ))}
-            </ul>
+          {type === 'gwt' ? (
+            <GwtNodeBody gwt={data.gwt ?? emptyGwt()} />
+          ) : (
+            <>
+              {showTags && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {eventContexts.map((name) => (
+                    <span
+                      key={name}
+                      className={`rounded-full border px-1.5 py-px text-[9px] leading-tight font-semibold ${contextTagClass(name)}`}
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {type === 'screen' && data.wireframe && (
+                <div className="mt-1.5 overflow-hidden rounded-md border border-zinc-300 bg-white shadow-sm">
+                  <WireframePreview wireframe={data.wireframe} className="block h-16 w-full" />
+                </div>
+              )}
+              {contentLines.length > 0 && (
+                <ul className="mt-1.5 space-y-0.5 border-t border-black/15 pt-1.5 font-mono text-[10px] leading-tight opacity-80">
+                  {contentLines.map((line, index) => (
+                    <li key={index} className="break-words">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
 
@@ -231,15 +238,19 @@ function CqrsNode({ id, type, data, selected, parentId, dragging }: NodeProps<Bo
         )}
       </div>
 
-      {HANDLES.map(({ id: handleId, position }) => (
-        <Handle
-          key={handleId}
-          id={handleId}
-          type="source"
-          position={position}
-          style={{ background: style.accent }}
-        />
-      ))}
+      {/* GWT scenarios document slices by referencing elements, not by data
+          flow, so they carry no connection handles — that keeps them out of
+          the edge graph and therefore out of flow traces and context dimming. */}
+      {type !== 'gwt' &&
+        HANDLES.map(({ id: handleId, position }) => (
+          <Handle
+            key={handleId}
+            id={handleId}
+            type="source"
+            position={position}
+            style={{ background: style.accent }}
+          />
+        ))}
     </div>
   );
 }

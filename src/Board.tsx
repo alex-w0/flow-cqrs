@@ -18,6 +18,7 @@ import {
   type DefaultEdgeOptions,
   type EdgeMarker,
   type OnNodeDrag,
+  type OnNodesDelete,
   type XYPosition,
 } from '@xyflow/react';
 import Palette from './components/Palette';
@@ -52,10 +53,14 @@ import {
   ELEMENT_STYLES,
   NODE_HEIGHT,
   NODE_WIDTH,
+  GWT_SECTIONS,
   SLICE_ACCENT,
+  buildGwtSections,
+  emptyGwt,
   isCqrsKind,
   type BoardEdge,
   type BoardNode,
+  type CqrsKind,
   type PaletteKind,
 } from './types';
 import { initialEdges, initialNodes } from './initialBoard';
@@ -261,6 +266,8 @@ export default function Board() {
           label: style.defaultLabel,
           // New events start in the default context — if it still exists on this board.
           ...(kind === 'event' && contexts.includes(DEFAULT_CONTEXT) ? { contexts: [DEFAULT_CONTEXT] } : {}),
+          // New scenarios start with three empty sections ready to fill in.
+          ...(kind === 'gwt' ? { gwt: emptyGwt() } : {}),
         },
       };
 
@@ -411,6 +418,37 @@ export default function Board() {
     [getNodes, getInternalNode, setNodes, setDropHighlight],
   );
 
+  // When a referenced element is deleted, stamp its current label/type into the
+  // scenarios that point at it, so a dangling reference still shows what it was
+  // rather than collapsing to an anonymous placeholder.
+  const onNodesDelete = useCallback<OnNodesDelete<BoardNode>>(
+    (deleted) => {
+      const meta = new Map<string, { label: string; type: CqrsKind }>();
+      for (const node of deleted) {
+        if (isCqrsKind(node.type)) meta.set(node.id, { label: node.data.label, type: node.type });
+      }
+      if (meta.size === 0) return;
+      setNodes((nds) =>
+        nds.map((node) => {
+          const gwt = node.type === 'gwt' ? node.data.gwt : undefined;
+          if (!gwt) return node;
+          const touches = GWT_SECTIONS.some(({ key }) =>
+            gwt[key].some((item) => item.kind === 'ref' && meta.has(item.ref)),
+          );
+          if (!touches) return node;
+          const stamped = buildGwtSections((key) =>
+            gwt[key].map((item) => {
+              const snapshot = item.kind === 'ref' ? meta.get(item.ref) : undefined;
+              return snapshot ? { ...item, label: snapshot.label, type: snapshot.type } : item;
+            }),
+          );
+          return { ...node, data: { ...node.data, gwt: stamped } };
+        }),
+      );
+    },
+    [setNodes],
+  );
+
   // --- JSON import / export -----------------------------------------------------
 
   const onExport = useCallback(() => {
@@ -485,6 +523,7 @@ export default function Board() {
           onNodeDragStart={onNodeDragStart}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
+          onNodesDelete={onNodesDelete}
           onDrop={onDrop}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
